@@ -34,8 +34,12 @@ var spec =
       "description": "Sipariş kalemleri"
     },
     {
-      "name": "Sipariş işlemleri",
-      "description": "Çeşitli sistemlerden gelen sipariş bilgilerini kaydetme",
+      "name": "GetOrders",
+      "description": "Çeşitli sistemlerden gelen sipariş bilgilerini kaydetme"
+    },
+    {
+      "name": "SendEmail",
+      "description": "E-posta servisi",
       "externalDocs": {
         "description": "Find out more about our store",
         "url": "http://swagger.io"
@@ -874,7 +878,7 @@ var spec =
     "/api/orders/get": {
       "post": {
         "tags": [
-          "Sipariş işlemleri"
+          "GetOrders"
         ],
         "summary": "Pazar yerlerinden ürün çekme",
         "description": "Şirketin sisteminde bulunan 'Onaylandı' durumundaki siparişlerini çeker",
@@ -909,6 +913,61 @@ var spec =
           },
           "401": {
             "description": "Eğer işlemi yapmak isteyen çalışanın bu işleme erişme yetkisi yoksa"
+          }
+        },
+        "security": [
+          {
+            "token": []
+          }
+        ]
+      }
+    },
+    "/api/send_mails": {
+      "post": {
+        "tags": [
+          "SendEmail"
+        ],
+        "summary": "Vendoru seçilmiş OrderItem'lara mail atma işlemi",
+        "description": "Vendoru kaydedilmiş OrderItemlar için vendor sahibine mail atma işlemi",
+        "operationId": "sendMail",
+        "consumes": [
+          "text/json"
+        ],
+        "produces": [
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "order_items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "order_item_id": {
+                        "type": "integer",
+                        "description": "Mail atılacak olan sipariş kalemlerinin idleri"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Başarılı bir şekilde mail atıldı"
+          },
+          "400": {
+            "description": "Mail atılırken bir sorun çıktıysa",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         },
         "security": [
