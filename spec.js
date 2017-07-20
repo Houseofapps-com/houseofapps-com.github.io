@@ -1,5 +1,6 @@
 var spec = 
 {
+  {
   "swagger": "2.0",
   "info": {
     "description": "OPAK API; [gittigidiyor](gittigidiyor.com), [hepsiburada](hepsiburada.com), [ideasoft](ideasoft.com) ve [n11](n11.com) adresi üzerinde mağazası bulunan kurumsal firmalara hizmet veren, bu siteler üzerinde yapılabilen siparişlere ve tedarikçilere yönelik tüm işlemleri kolaylaştırcak ve bir uygulamadır.",
@@ -30,7 +31,11 @@ var spec =
       "description": "Tedarikçiler"
     },
     {
-      "name": "Sipariş çekimi",
+      "name": "OrderItems",
+      "description": "Sipariş kalemleri"
+    },
+    {
+      "name": "Sipariş işlemleri",
       "description": "Çeşitli sistemlerden gelen sipariş bilgilerini kaydetme",
       "externalDocs": {
         "description": "Find out more about our store",
@@ -752,26 +757,48 @@ var spec =
         ]
       }
     },
-    "/api/get_ideasoft_orders": {
-      "post": {
+    "/api/orderitems/{status}{date_from}{date_to}": {
+      "get": {
         "tags": [
-          "Sipariş çekimi"
+          "OrderItems"
         ],
-        "summary": "Ideasoft Ürün Çekme",
-        "description": "Şirketin ideasoft sisteminde bulunan Onaylandı durumundaki siparişlerini çeker",
-        "operationId": "IdeasoftOrders",
+        "summary": "Sipariş kalemlerini listele",
+        "description": "Sistemde kayıtlı olan sipariş kalemlerini listeler",
+        "operationId": "OrderItemList",
         "produces": [
           "text/json"
         ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "path",
+            "description": "• ?status=approved: Onaylanmış siparişler\n\n• ?status=cancelled: İptal olmuş siparişler\n",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "date_from",
+            "in": "path",
+            "description": "Listelenecek siparişlerin tarih başlangıcı",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "date_to",
+            "in": "path",
+            "description": "Listelenecek siparişlerin tarih bitişi",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
         "responses": {
-          "204": {
-            "description": "Başarılı bir şekilde ürünler kaydedildi"
-          },
-          "400": {
-            "description": "Veri, veritabanına yazılırken hata çıktıysa"
-          },
-          "401": {
-            "description": "Eğer işlemi yapmak isteyen çalışanın ideasoft'a erişme yetkisi yoksa"
+          "201": {
+            "description": "Sistemde kayıtlı olan ayarlar başarılı olarak çekildi",
+            "schema": {
+              "$ref": "#/definitions/order_item_list"
+            }
           }
         },
         "security": [
@@ -781,26 +808,61 @@ var spec =
         ]
       }
     },
-    "/api/get_gg_orders": {
-      "post": {
+    "/api/orderitems/{id}": {
+      "put": {
         "tags": [
-          "Sipariş çekimi"
+          "OrderItems"
         ],
-        "summary": "Gittigidiyor Ürün Çekme",
-        "description": "Şirketin gittigidiyor sisteminde bulunan Onaylandı durumundaki siparişlerini çeker",
-        "operationId": "GittigidiyorOrders",
+        "summary": "Sipariş kalemini tedarikçi ata",
+        "description": "Sistemde kayıtlı olan sipariş kalemlerine tedarikçi atar",
+        "operationId": "OrderItemUpdate",
+        "consumes": [
+          "text/json"
+        ],
         "produces": [
           "text/json"
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Sipariş kaleminin veritabanındaki PK’sı",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "",
+            "required": true,
+            "schema": {
+              "properties": {
+                "vendor": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "Çalışanın seçtiği vendor'ın ID'si"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
         "responses": {
-          "204": {
-            "description": "Başarılı bir şekilde ürünler kaydedildi"
+          "201": {
+            "description": "Sipariş kalemi girilen verilere göre başarılı bir şekilde güncellendi",
+            "schema": {
+              "$ref": "#/definitions/order_item_list"
+            }
           },
           "400": {
-            "description": "Veri, veritabanına yazılırken hata çıktıysa"
-          },
-          "401": {
-            "description": "Eğer işlemi yapmak isteyen çalışanın gittigidiyor'a erişme yetkisi yoksa"
+            "description": "Sipariş kalemi güncellenirken bir sorun çıktı",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         },
         "security": [
@@ -810,55 +872,44 @@ var spec =
         ]
       }
     },
-    "/api/get_hb_orders": {
+    "/api/orders/get": {
       "post": {
         "tags": [
-          "Sipariş çekimi"
+          "Sipariş işlemleri"
         ],
-        "summary": "Hepsiburada Ürün Çekme",
-        "description": "Şirketin hepsiburada sisteminde bulunan Onaylandı durumundaki siparişlerini çeker",
-        "operationId": "HepsiburadaOrders",
+        "summary": "Pazar yerlerinden ürün çekme",
+        "description": "Şirketin sisteminde bulunan 'Onaylandı' durumundaki siparişlerini çeker",
+        "operationId": "getOrders",
+        "consumes": [
+          "text/json"
+        ],
         "produces": [
           "text/json"
         ],
-        "responses": {
-          "204": {
-            "description": "Başarılı bir şekilde ürünler kaydedildi"
-          },
-          "400": {
-            "description": "Veri, veritabanına yazılırken hata çıktıysa"
-          },
-          "401": {
-            "description": "Eğer işlemi yapmak isteyen çalışanın hepsiburada'ya erişme yetkisi yoksa"
-          }
-        },
-        "security": [
+        "parameters": [
           {
-            "token": []
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "marketplace_symbol": {
+                  "type": "string",
+                  "description": "Sipariş çekilecek olan pazar yerinin sembolü.\n\nDeğerler,\n\n• n11.com için: n11\n\n• gittigidiyor: için gg\n\n• ideasoft için: ide \n\n• hepsiburada için: hb\n\n• hepsi için: all\n"
+                }
+              }
+            }
           }
-        ]
-      }
-    },
-    "/api/get_n11_orders": {
-      "post": {
-        "tags": [
-          "Sipariş çekimi"
-        ],
-        "summary": "N11 Ürün Çekme",
-        "description": "Şirketin N11 sisteminde bulunan Onaylandı durumundaki siparişlerini çeker",
-        "operationId": "n11Orders",
-        "produces": [
-          "text/json"
         ],
         "responses": {
-          "204": {
+          "201": {
             "description": "Başarılı bir şekilde ürünler kaydedildi"
           },
           "400": {
             "description": "Veri, veritabanına yazılırken hata çıktıysa"
           },
           "401": {
-            "description": "Eğer işlemi yapmak isteyen çalışanın N11'e erişme yetkisi yoksa"
+            "description": "Eğer işlemi yapmak isteyen çalışanın bu işleme erişme yetkisi yoksa"
           }
         },
         "security": [
@@ -897,9 +948,14 @@ var spec =
       }
     },
     "vendor_list": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/vendor"
+      "type": "object",
+      "properties": {
+        "vendors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/vendor"
+          }
+        }
       }
     },
     "vendor": {
@@ -935,8 +991,8 @@ var spec =
           "description": "Tedarikçinin sembolü"
         },
         "tenant": {
-          "$ref": "#/definitions/Tenant",
-          "description": "E-posta ayarının kayıtlı olduğu şirket bilgisi"
+          "type": "integer",
+          "description": "E-posta ayarının kayıtlı olduğu şirket ID'si"
         }
       },
       "xml": {
@@ -977,10 +1033,79 @@ var spec =
         }
       }
     },
+    "order_item_list": {
+      "type": "object",
+      "properties": {
+        "order_item": {
+          "$ref": "#/definitions/order_item"
+        }
+      }
+    },
+    "order_item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Sipariş kaleminin veritabanındaki ID'si"
+        },
+        "product": {
+          "$ref": "#/definitions/product"
+        },
+        "statement_id": {
+          "type": "string",
+          "description": "Sipariş kaleminin ait olduğu sipariş numarası"
+        },
+        "store_name": {
+          "type": "string",
+          "description": "Sipariş kaleminin ait olduğu mağaza ismi"
+        },
+        "marketplace_name": {
+          "type": "string",
+          "description": "Sipariş kaleminin ait olduğu pazar yeri adı"
+        },
+        "order_at": {
+          "type": "string",
+          "description": "Sipariş kaleminin ait olduğu siparişin oluşturulma tarihi"
+        },
+        "vendor": {
+          "$ref": "#/definitions/vendor"
+        },
+        "vendor_price": {
+          "type": "string",
+          "description": "Tedarikçi ile anlaşılan fiyat"
+        }
+      },
+      "xml": {
+        "name": "order_item"
+      }
+    },
+    "product": {
+      "type": "object",
+      "properties": {
+        "stock_code": {
+          "type": "string",
+          "description": "Ürünün stok kodu"
+        },
+        "marketplace_stock_code": {
+          "type": "string",
+          "description": "Ürünün pazar yerindeki stok kodu"
+        },
+        "name": {
+          "type": "string",
+          "description": "Ürünün ismi"
+        }
+      }
+    },
     "email_config_list": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/email_config"
+      "type": "object",
+      "properties": {
+        "email_configs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/email_config"
+          }
+        }
       }
     },
     "email_config": {
@@ -1054,9 +1179,14 @@ var spec =
       }
     },
     "tenant_config_list": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/tenant_config"
+      "type": "object",
+      "properties": {
+        "tenant_configs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/tenant_config"
+          }
+        }
       }
     },
     "tenant_config": {
@@ -1069,6 +1199,11 @@ var spec =
         },
         "marketplace": {
           "$ref": "#/definitions/MarketPlace"
+        },
+        "store": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Tenant'ın sahip olduğu mağazanın ID'si"
         }
       },
       "xml": {
@@ -1145,13 +1280,12 @@ var spec =
     "Tenant": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "integer"
+        },
         "name": {
           "type": "string",
           "description": "Kayıt olacak olan şirketin ismi"
-        },
-        "email": {
-          "type": "string",
-          "description": "Kayıt olacak şirketin kurumsal e-postası"
         }
       }
     },
@@ -1217,6 +1351,7 @@ var spec =
     "description": "Word dökümantasyonu",
     "url": "https://docs.google.com/a/sanalreyonum.com/document/d/16jsw1GJymbKLplTPo1jfXgQzpiRfw1nJfbIHqM7EwGw/edit?usp=sharing"
   }
+}
 }
 
 
