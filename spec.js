@@ -1,6 +1,5 @@
 var spec = 
 {
-  {
   "swagger": "2.0",
   "info": {
     "description": "OPAK API; [gittigidiyor](gittigidiyor.com), [hepsiburada](hepsiburada.com), [ideasoft](ideasoft.com) ve [n11](n11.com) adresi üzerinde mağazası bulunan kurumsal firmalara hizmet veren, bu siteler üzerinde yapılabilen siparişlere ve tedarikçilere yönelik tüm işlemleri kolaylaştırcak ve bir uygulamadır.",
@@ -1351,7 +1350,6 @@ var spec =
     "description": "Word dökümantasyonu",
     "url": "https://docs.google.com/a/sanalreyonum.com/document/d/16jsw1GJymbKLplTPo1jfXgQzpiRfw1nJfbIHqM7EwGw/edit?usp=sharing"
   }
-}
 }
 
 
